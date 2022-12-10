@@ -8,10 +8,23 @@ services:
       - './.env'    
     image: prom/prometheus:v2.40.6
     volumes:
-      - '${PROMETHUS_CONFIG_FILE_PATH_LOCAL}:${PROMETHUS_CONFIG_FILE_PATH}'
-    command: "--config.file=${PROMETHUS_CONFIG_FILE_PATH}/prometheus.yaml"
+      - '${PROMETHUS_CONFIG_FILE_PATH_LOCAL}/${PROMETHUS_CONFIG_FILE}:${PROMETHUS_CONFIG_FILE_PATH}/${PROMETHUS_CONFIG_FILE}'
+      - prometheus-docker-sd:/prometheus-docker-sd:ro
+    command:
+    - "--config.file=${PROMETHUS_CONFIG_FILE_PATH}/${PROMETHUS_CONFIG_FILE}"
+    - --web.enable-remote-write-receiver
+    - --enable-feature=exemplar-storage
+    - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+    - "--web.console.templates=/usr/share/prometheus/consoles"
     ports:
       - ${PROMETHUS_PORT}:${PROMETHUS_PORT}
+
+  prometheus-docker-sd:
+    image: "stucky/prometheus-docker-sd:latest"
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - prometheus-docker-sd:/prometheus-docker-sd:rw
 
   loki:
     container_name: loki
@@ -70,12 +83,26 @@ services:
 
   backend:
     container_name: backend
+    labels:
+      prometheus-scrape.enabled: "true"
+      prometheus-scrape.job_name: "container"
+      prometheus-scrape.port: ${BACKEND_PORT}
+      prometheus-scrape.metrics_path: "/metrics"
     env_file:
       - './.env'
+    environment:
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=http://${TEMPO_HOST}:${TEMPO_PORT_OTLP_RECEIVER}'
+      - 'OTEL_EXPORTER_OTLP_TRACES_INSECURE=true'
+      - 'OTEL_TRACES_SAMPLER_ARG=1.0'
+      - 'OTEL_SERVICE_NAME=${BACKEND_SERVICE_NAME}'
     command:
       - '--address=${BACKEND_ADDRESS}'
     build:
       context: './demo/backend'
     ports:
       - '${BACKEND_PORT}:${BACKEND_PORT}'
+    depends_on:
+      - 'promtail'
 
+volumes:
+  prometheus-docker-sd:
