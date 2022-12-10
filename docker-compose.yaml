@@ -53,3 +53,15 @@ services:
       - '--config=${GRAFANA_CONFIG_PATH}/${GRAFANA_CONFIG_FILE}'
     ports:
       - '${GRAFANA_PORT}:${GRAFANA_PORT}'
+
+  backend:
+    container_name: backend
+    env_file:
+      - './.env'
+    command:
+      - '--address=${BACKEND_ADDRESS}'
+    build:
+      context: './demo/backend'
+    ports:
+      - '${BACKEND_PORT}:${BACKEND_PORT}'
+
