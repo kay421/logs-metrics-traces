@@ -1,0 +1,38 @@
+
+version: "3.9"
+services:
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one
+    environment:
+      - JAEGER_DISABLED=false
+    networks:
+      - dev
+    ports:
+      - 16686:16686
+      - 6831:6831/udp
+      - 14268
+      - 14250
+
+  zipkin-all-in-one:
+    image: openzipkin/zipkin:latest
+    networks:
+      - dev
+    ports:
+      - "9411:9411"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    networks:
+      - dev
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP gRPC receiver
+    depends_on:
+      - jaeger-all-in-one
+      - zipkin-all-in-one
+
+networks:
+  dev:
