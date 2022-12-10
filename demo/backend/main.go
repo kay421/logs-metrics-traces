@@ -226,7 +226,7 @@ func main() {
 		spanCtx := trace.SpanFromContext(r.Context())
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(fmt.Sprintf(`{"trace_id":%s,"span_id":%s}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String())))
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"trace_id":"%s","span_id":"%s"}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String())))
 	})))
 	mux.Handle("/spend-cpu", requestMiddleware("spend-cpu", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

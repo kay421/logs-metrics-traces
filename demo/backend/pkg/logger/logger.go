@@ -41,13 +41,13 @@ func (l *RequestLogger) SetRequestContext(ctx context.Context) {
 }
 func (l *RequestLogger) Errorf(format string, args ...interface{}) {
 	spanCtx := trace.SpanFromContext(l.ctx)
-	l.errorLogger.Printf(`{"severity":"error","trace_id":%s,"span_id":%s,"body":%q}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String(), fmt.Sprintf(format, args...))
+	l.errorLogger.Printf(`{"severity":"error","trace_id":"%s","span_id":"%s","body":%q}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String(), fmt.Sprintf(format, args...))
 }
 func (l *RequestLogger) Infof(format string, args ...interface{}) {
 	spanCtx := trace.SpanFromContext(l.ctx)
-	l.infoLogger.Printf(`{"severity":"info","trace_id":%s,"span_id":%s,"body":%q}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String(), fmt.Sprintf(format, args...))
+	l.infoLogger.Printf(`{"severity":"info","trace_id":"%s","span_id":"%s","body":%q}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String(), fmt.Sprintf(format, args...))
 }
 func (l *RequestLogger) Debugf(format string, args ...interface{}) {
 	spanCtx := trace.SpanFromContext(l.ctx)
-	l.debugLogger.Printf(`{"severity":"error","trace_id":%s,"span_id":%s,"body":%q}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String(), fmt.Sprintf(format, args...))
+	l.debugLogger.Printf(`{"severity":"error","trace_id":"%s","span_id":"%s","body":%q}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String(), fmt.Sprintf(format, args...))
 }
