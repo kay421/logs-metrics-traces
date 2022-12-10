@@ -22,6 +22,19 @@ services:
     ports:
       - '${LOKI_PORT}:${LOKI_PORT}'
 
+  tempo:
+    container_name: tempo
+    env_file:
+      - './.env'
+    image: 'grafana/tempo:1.5.0'
+    volumes:
+      - '${TEMPO_CONFIG_PATH_LOCAL}:${TEMPO_CONFIG_PATH}'
+    command:
+      - '-config.file=${TEMPO_CONFIG_PATH}/${TEMPO_CONFIG_FILE}'
+      - '-config.expand-env=true'
+    ports:
+      - '${TEMPO_PORT}:${TEMPO_PORT}'
+
   grafana:
     container_name: grafana
     env_file:
