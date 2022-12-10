@@ -1,1 +1,23 @@
 apiVersion: 1
+
+deleteDatasources:
+  - name: 'Cortex'
+  - name: 'Tempo'
+  - name: 'Loki'
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://${PROMETHUS_HOST}:${PROMETHUS_PORT}
+    basicAuth: false
+    isDefault: true
+    readOnly: false
+    editable: true
+    # jsonData:
+    #   timeInterval: 15s
+    #   exemplarTraceIdDestinations:
+    #   - name: TraceID
+    #     datasourceUid: tempo
+
+

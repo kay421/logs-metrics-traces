@@ -1,7 +1,20 @@
 version: '3.8'
 
 services:
+
+  prometheus:
+    container_name: prometheus
+    env_file:
+      - './.env'    
+    image: prom/prometheus:v2.40.6
+    volumes:
+      - '${PROMETHUS_CONFIG_FILE_PATH_LOCAL}:${PROMETHUS_CONFIG_FILE_PATH}'
+    command: "--config.file=${PROMETHUS_CONFIG_FILE_PATH}/prometheus.yaml"
+    ports:
+      - ${PROMETHUS_PORT}:${PROMETHUS_PORT}
+      
   grafana:
+    container_name: grafana
     env_file:
       - './.env'
     image: 'grafana/grafana:9.3.1'
