@@ -35,6 +35,20 @@ services:
     ports:
       - '${TEMPO_PORT}:${TEMPO_PORT}'
 
+  promtail:
+    container_name: promtail
+    env_file:
+    - './.env'
+    image: grafana/promtail:2.7.1
+    command:
+      - '-config.file=${PROMTAIL_CONFIG_PATH}/${PROMTAIL_CONFIG_FILE}'
+      - '-config.expand-env=true'
+    volumes:
+      - '${PROMTAIL_CONFIG_PATH_LOCAL}:${PROMTAIL_CONFIG_PATH}'
+      # to read container labels and logs
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers
+
   grafana:
     container_name: grafana
     env_file:
