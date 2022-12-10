@@ -12,7 +12,16 @@ services:
     command: "--config.file=${PROMETHUS_CONFIG_FILE_PATH}/prometheus.yaml"
     ports:
       - ${PROMETHUS_PORT}:${PROMETHUS_PORT}
-      
+
+  loki:
+    container_name: loki
+    env_file:
+      - './.env'
+    image: 'grafana/loki:2.7.1'
+    command: '-config.file=${LOKI_CONFIG_PATH}/${LOKI_CONFIG_FILE}'
+    ports:
+      - '${LOKI_PORT}:${LOKI_PORT}'
+
   grafana:
     container_name: grafana
     env_file:
