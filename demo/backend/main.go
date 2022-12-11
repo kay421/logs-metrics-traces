@@ -249,6 +249,19 @@ func main() {
 		})
 	})))
 
+	mux.Handle("/random-sleep", requestMiddleware("random-sleep", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Spend some time on CPU.
+		rand.Seed(time.Now().UnixNano())
+		n := rand.Intn(10) // n will be between 0 and 10
+		config.GetLogger(r.Context()).Infof("Sleeping %d seconds...\n", n)
+		time.Sleep(time.Duration(n) * time.Second)
+		spanCtx := trace.SpanFromContext(r.Context())
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"trace_id":%s,"span_id":%s}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String())))
+	})))
+
 	r := prometheus.NewRegistry()
 	r.MustRegister(httpRequestsTotal)
 	r.MustRegister(httpRequestDuration)
