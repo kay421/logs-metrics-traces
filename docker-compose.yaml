@@ -5,19 +5,21 @@ services:
   prometheus:
     container_name: prometheus
     env_file:
-      - './.env'    
+      - './.env'
     image: prom/prometheus:v2.40.6
     volumes:
-      - '${PROMETHUS_CONFIG_FILE_PATH_LOCAL}/${PROMETHUS_CONFIG_FILE}:${PROMETHUS_CONFIG_FILE_PATH}/${PROMETHUS_CONFIG_FILE}'
+      - '${PROMETHEUS_CONFIG_FILE_PATH_LOCAL}/${PROMETHEUS_CONFIG_FILE}:${PROMETHEUS_CONFIG_FILE_PATH}/${PROMETHEUS_CONFIG_FILE}'
       - prometheus-docker-sd:/prometheus-docker-sd:ro
     command:
-    - "--config.file=${PROMETHUS_CONFIG_FILE_PATH}/${PROMETHUS_CONFIG_FILE}"
+    - "--config.file=${PROMETHEUS_CONFIG_FILE_PATH}/${PROMETHEUS_CONFIG_FILE}"
     - --web.enable-remote-write-receiver
     - --enable-feature=exemplar-storage
     - "--web.console.libraries=/usr/share/prometheus/console_libraries"
     - "--web.console.templates=/usr/share/prometheus/consoles"
     ports:
-      - ${PROMETHUS_PORT}:${PROMETHUS_PORT}
+      - ${PROMETHEUS_PORT}:${PROMETHEUS_PORT}
+    networks:
+      - demo
 
   prometheus-docker-sd:
     image: "stucky/prometheus-docker-sd:latest"
@@ -25,18 +27,26 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - prometheus-docker-sd:/prometheus-docker-sd:rw
+    networks:
+      - demo
 
   loki:
     container_name: loki
+    labels:
+      prometheus-scrape.enabled: "false"
     env_file:
       - './.env'
     image: 'grafana/loki:2.7.1'
     command: '-config.file=${LOKI_CONFIG_PATH}/${LOKI_CONFIG_FILE}'
     ports:
       - '${LOKI_PORT}:${LOKI_PORT}'
+    networks:
+      - demo
 
   tempo:
     container_name: tempo
+    labels:
+      prometheus-scrape.enabled: "false"
     env_file:
       - './.env'
     image: 'grafana/tempo:1.5.0'
@@ -47,9 +57,15 @@ services:
       - '-config.expand-env=true'
     ports:
       - '${TEMPO_PORT}:${TEMPO_PORT}'
+      - '${TEMPO_PORT_OTLP_RECEIVER_GRPC}:${TEMPO_PORT_OTLP_RECEIVER_GRPC}'
+      - '${TEMPO_PORT_OTLP_RECEIVER_HTTP}:${TEMPO_PORT_OTLP_RECEIVER_HTTP}'
+    networks:
+      - demo
 
   promtail:
     container_name: promtail
+    labels:
+      prometheus-scrape.enabled: "false"
     env_file:
     - './.env'
     image: grafana/promtail:2.7.1
@@ -61,9 +77,13 @@ services:
       # to read container labels and logs
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers
+    networks:
+      - demo
 
   grafana:
     container_name: grafana
+    labels:
+      prometheus-scrape.enabled: "false"
     env_file:
       - './.env'
     image: 'grafana/grafana:9.3.1'
@@ -80,6 +100,8 @@ services:
       - '--config=${GRAFANA_CONFIG_PATH}/${GRAFANA_CONFIG_FILE}'
     ports:
       - '${GRAFANA_PORT}:${GRAFANA_PORT}'
+    networks:
+      - demo
 
   backend:
     container_name: backend
