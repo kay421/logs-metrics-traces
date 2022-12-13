@@ -4,7 +4,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://${PROMETHUS_HOST}:${PROMETHUS_PORT}
+    url: http://${PROMETHEUS_HOST}:${PROMETHEUS_PORT}
     basicAuth: false
     isDefault: true
     readOnly: false
