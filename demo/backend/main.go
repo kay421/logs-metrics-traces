@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"go-sample-application/pkg/config"
@@ -33,6 +34,11 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.opentelemetry.io/otel/trace"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/logging/logrus"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 var (
@@ -63,6 +69,14 @@ var (
 		[]string{},
 	)
 )
+
+// The model.
+type Blog struct {
+	gorm.Model
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	Slug    string `json:"slug"`
+}
 
 func initializeTraceProvider(ctx context.Context, pyroscopeServer string) (func(context.Context) error, error) {
 	r, err := resource.New(ctx,
@@ -250,7 +264,6 @@ func main() {
 	})))
 
 	mux.Handle("/random-sleep", requestMiddleware("random-sleep", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Spend some time on CPU.
 		rand.Seed(time.Now().UnixNano())
 		n := rand.Intn(10) // n will be between 0 and 10
 		config.GetLogger(r.Context()).Infof("Sleeping %d seconds...\n", n)
@@ -260,6 +273,43 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(fmt.Sprintf(`{"trace_id":%s,"span_id":%s}`, spanCtx.SpanContext().TraceID().String(), spanCtx.SpanContext().SpanID().String())))
+	})))
+
+	l := gormlogger.New(
+		logrus.NewWriter(),
+		gormlogger.Config{
+			SlowThreshold: time.Millisecond,
+			LogLevel:      gormlogger.Warn,
+			Colorful:      false,
+		},
+	)
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{Logger: l})
+	if err != nil {
+		panic("Failed to open the SQLite database.")
+	}
+	if err := db.Use(tracing.NewPlugin()); err != nil {
+		panic(err)
+	}
+	db.AutoMigrate(&Blog{})
+	for i := 0; i < 300; i++ {
+		db.Create(&Blog{
+			Title:   fmt.Sprintf("example title %d", i),
+			Content: fmt.Sprintf("example content %d", i),
+			Slug:    fmt.Sprintf("example slug %d", i),
+		})
+	}
+
+	mux.Handle("/blogs", requestMiddleware("blogs", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Find all of our users.
+		var blogs []Blog
+		db.WithContext(r.Context()).Find(&blogs)
+
+		// Output the users from the DB json encoded
+		jsonEncoded, _ := json.Marshal(&blogs)
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(jsonEncoded))
+		w.WriteHeader(http.StatusOK)
 	})))
 
 	r := prometheus.NewRegistry()

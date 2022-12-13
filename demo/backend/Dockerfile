@@ -1,23 +1,62 @@
-FROM golang:1.19-alpine as builder
+# syntax=docker/dockerfile:1
 
-ENV deps "git"
+ARG UBUNTU_VERSION="20.04"
+ARG GO_VERSION="1.19.3"
 
-RUN apk update && apk upgrade
-RUN apk add --no-cache $deps
+FROM ubuntu:${UBUNTU_VERSION} AS base
+RUN export DEBIAN_FRONTEND="noninteractive" \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y software-properties-common \
+  && add-apt-repository ppa:git-core/ppa \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y \
+    gcc \
+    git \
+    build-essential \
+  && apt-get -y autoremove \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+  && ln -sf /usr/include/asm-generic /usr/include/asm
 
-ENV CGO_ENABLED=0
+
+FROM base AS golang
+RUN export DEBIAN_FRONTEND="noninteractive" && apt-get update && apt-get install --no-install-recommends -y curl jq
+WORKDIR /golang
+RUN curl -m30 --retry 5 --retry-connrefused --retry-delay 5 -sSL "https://go.dev/dl/?mode=json&include=all" -o "godist.json"
+ARG GO_VERSION
+ARG TARGETOS
+ARG TARGETARCH
+ENV PATH="/usr/local/go/bin:$PATH"
+RUN <<EOT
+GO_DIST_FILE=go${GO_VERSION%.0}.${TARGETOS}-${TARGETARCH}.tar.gz
+GO_DIST_URL=https://golang.org/dl/${GO_DIST_FILE}
+SHA256=$(cat godist.json | jq -r ".[] | select(.version==\"go${GO_VERSION%.0}\") | .files[] | select(.filename==\"$GO_DIST_FILE\").sha256")
+curl -sSL "$GO_DIST_URL.asc" -o "go.tgz.asc"
+curl -sSL "$GO_DIST_URL" -o "go.tgz"
+echo "$SHA256 *go.tgz" | sha256sum -c -
+tar -C /usr/local -xzf go.tgz
+go version
+EOT
+
+FROM base
+COPY --from=golang /usr/local/go /usr/local/go
+
+ENV GOROOT="/usr/local/go"
+ENV GOPATH="/go"
+ARG GO_VERSION
+ENV GO_VERSION=${GO_VERSION}
+
+ENV PATH="$GOPATH/bin:/usr/local/go/bin:$PATH"
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 
 WORKDIR /build/
 
 COPY go.mod go.sum /build/
 RUN go mod download
-RUN apk del --purge $deps
 
 COPY main.go /build/main.go
 COPY pkg /build/pkg
 RUN go build -trimpath -o /usr/local/bin/main -ldflags="-s -w" /build/main.go
 
-FROM gcr.io/distroless/base
-COPY --from=builder /usr/local/bin/main /usr/local/bin/main
 
 ENTRYPOINT ["/usr/local/bin/main"]
