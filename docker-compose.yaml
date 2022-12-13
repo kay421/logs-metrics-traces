@@ -103,6 +103,28 @@ services:
       - '${BACKEND_PORT}:${BACKEND_PORT}'
     depends_on:
       - 'promtail'
+    networks:
+        - demo
+
+  envoy:
+    container_name: envoy
+    labels:
+      prometheus-scrape.enabled: "true"
+      prometheus-scrape.job_name: "container"
+      prometheus-scrape.port: '${ENVOY_ADMIN_PORT}'
+      prometheus-scrape.metrics_path: "/stats/prometheus"
+    env_file:
+      - './.env'
+    build:
+      context: ./infra/envoy
+    ports:
+      - "${ENVOY_LISTENER_PORT}:${ENVOY_LISTENER_PORT}"
+      - "${ENVOY_ADMIN_PORT}:${ENVOY_ADMIN_PORT}"
+    networks:
+        - demo
 
 volumes:
   prometheus-docker-sd:
+
+networks:
+    demo:
