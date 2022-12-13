@@ -91,7 +91,7 @@ services:
     env_file:
       - './.env'
     environment:
-      - 'OTEL_EXPORTER_OTLP_ENDPOINT=http://${TEMPO_HOST}:${TEMPO_PORT_OTLP_RECEIVER}'
+      - 'OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}'
       - 'OTEL_EXPORTER_OTLP_TRACES_INSECURE=true'
       - 'OTEL_TRACES_SAMPLER_ARG=1.0'
       - 'OTEL_SERVICE_NAME=${BACKEND_SERVICE_NAME}'
@@ -122,6 +122,22 @@ services:
       - "${ENVOY_ADMIN_PORT}:${ENVOY_ADMIN_PORT}"
     networks:
         - demo
+
+  otel-collector:
+    container_name: otel-collector
+    labels:
+      prometheus-scrape.enabled: "false"
+    image: otel/opentelemetry-collector:0.67.0
+    command:
+      - "--config=${OTEL_COLLECTOR_CONFIG_PATH}/${OTEL_COLLECTOR_CONFIG_FILE}"
+    env_file:
+      - './.env'
+    volumes:
+      - '${OTEL_COLLECTOR_CONFIG_PATH_LOCAL}/${OTEL_COLLECTOR_CONFIG_FILE}:${OTEL_COLLECTOR_CONFIG_PATH}/${OTEL_COLLECTOR_CONFIG_FILE}'
+    ports:
+      - "1${OTEL_COLLECTOR_PORT_GRPC}:${OTEL_COLLECTOR_PORT_GRPC}"
+    networks:
+      - demo
 
 volumes:
   prometheus-docker-sd:
