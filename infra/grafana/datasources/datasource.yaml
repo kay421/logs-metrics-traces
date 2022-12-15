@@ -9,6 +9,7 @@ datasources:
     isDefault: true
     readOnly: false
     editable: true
+    allowUiUpdates: true
     uid: 'prometheus'
     jsonData:
       timeInterval: 15s
@@ -26,6 +27,7 @@ datasources:
     isDefault: false
     readOnly: false
     editable: false
+    allowUiUpdates: true
     uid: 'loki'
     jsonData:
       derivedFields:
@@ -49,6 +51,7 @@ datasources:
     isDefault: false
     readOnly: false
     editable: false
+    allowUiUpdates: true
     uid: 'tempo'
     jsonData:
       lokiSearch:
@@ -65,9 +68,11 @@ datasources:
       tracesToMetrics:
         datasourceUid: 'Prometheus'
         tags: [{ key: 'service.name', value: 'workload' }]
+        spanStartTimeShift: '-10m'
+        spanEndTimeShift: '10m'
         queries:
-          - name: 'Sample query'
-            query: 'sum(rate(tempo_spanmetrics_latency_bucket{$__tags}[5m]))'
+          - name: 'p99 latency'
+            query: histogram_quantile(.99, sum(rate(http_request_duration_seconds_bucket{$$__tags}[1m])) by (le))
       nodeGraph:
         enabled: 'true'
       serviceMap:
