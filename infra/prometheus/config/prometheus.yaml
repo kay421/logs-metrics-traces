@@ -11,3 +11,6 @@ scrape_configs:
     file_sd_configs:
       - files:
         - /prometheus-docker-sd/docker-targets.json
+    relabel_configs:
+      - action: labelmap
+        regex: 'com_docker_compose_(.+)'
