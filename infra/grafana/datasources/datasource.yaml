@@ -55,6 +55,19 @@ datasources:
         datasourceUid: 'loki'
       tracesToLogs:
         datasourceUid: 'loki'
+        tags: ['container']
+        mappedTags: [{ key: 'service.name', value: 'workload' }]
+        mapTagNamesEnabled: true
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: true
+        filterBySpanID: false
+      tracesToMetrics:
+        datasourceUid: 'Prometheus'
+        tags: [{ key: 'service.name', value: 'workload' }]
+        queries:
+          - name: 'Sample query'
+            query: 'sum(rate(tempo_spanmetrics_latency_bucket{$__tags}[5m]))'
       nodeGraph:
         enabled: 'true'
       serviceMap:
