@@ -22,7 +22,7 @@ services:
       - demo
 
   prometheus-docker-sd:
-    image: "stucky/prometheus-docker-sd:latest"
+    image: ghcr.io/kay421/prometheus-docker-sd/prometheus-docker-sd:latest
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -114,7 +114,8 @@ services:
       prometheus-scrape.job_name: "container"
       prometheus-scrape.port: ${BACKEND_PORT}
       prometheus-scrape.metrics_path: "/metrics"
-      service: "go-sample-application"
+      service: "backend"
+      workload: "go-sample-application"
     env_file:
       - './.env'
     environment:
@@ -141,6 +142,7 @@ services:
       prometheus-scrape.port: '${ENVOY_ADMIN_PORT}'
       prometheus-scrape.metrics_path: "/stats/prometheus"
       service: "envoy"
+      workload: "envoy"
     env_file:
       - './.env'
     build:
