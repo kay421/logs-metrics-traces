@@ -31,11 +31,9 @@ export function handleSummary(data) {
 }
 
 export default function () {
-  const res = http.get('http://localhost:8080/random-sleep');
+  http.get('http://localhost:8080/random-sleep');
+  http.get('http://localhost:8080/blogs');
   sleep(1);
 
-  const checkRes = check(res, {
-    'status is 200': (r) => r.status === 200,
-  });
 }
 
